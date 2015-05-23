@@ -3,9 +3,11 @@ title: "Practical Machine Learning Project"
 output: html_document
 ---
 
-# Summary
+## Summary
 
 In this project we will create a model for predicting the manner in which subjects in a study performed weight lifting (curling) exercises while wearing various motion sensors.  Some of the exercises were performed with correct form, others were intentionally performed with common but incorrect forms. The data set contains a "classe" field which is set to "A" if exercise was perfomed correctly and to "B", "C", "D", or "E" for the incorrect forms.  The accuracy of the prediction model will be determined by how well it predicts the "classe" value based on the sensor data.
+
+## Loading and Cleaning Data
 
 First we will load the the caret and randomForest libraries which will be used to build the predictive model, and set the random seed so the analysis is reproducible.  Then we will load the data from the training data file for the project and clean it up for analysis.  The data contain the strings "NA" and "#DIV/0!" which will be converted to NA values.
 
@@ -22,6 +24,8 @@ tmpData <- data.frame(rawData[,colMeans(is.na(rawData)) < 0.1], row.names=NULL)
 cleanData <- data.frame(tmpData[,-c(1:7)], row.names=NULL)
 ```
 
+## Set Up Training and Test Sets For Cross Validation
+
 Next we'll divide the cleaned data into a training and test set in a 60/40 ratio using random sub-sampling so that we can do cross validation of the model(s).
 
 ```{r}
@@ -30,6 +34,8 @@ trainset <- cleanData[inTrain,]
 testset <- cleanData[-inTrain,]
 ```
 
+## Create Prediction Model and Cross Validate
+
 Next we'll use the randomForest() function to create a prediction model from the training set.  Then we'll use the predict function to run the model against the testing set and use the confusionMatrix function to check the accuracy of the model.
 
 ```{r}
@@ -37,5 +43,7 @@ modFit <- randomForest(classe ~ .,data=trainset)
 predictions <- predict(modFit, newdata=testset)
 confusionMatrix(predictions, testset$classe)
 ```
+
+## Conclusion
 
 The model achieved 99.27% accuracy in predicting the "classe" values from the testing set, and the expected out-of-sample error rate is 0.73% (calculated as 100% minus the accuracy).
