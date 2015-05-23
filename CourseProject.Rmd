@@ -1,0 +1,41 @@
+---
+title: "Practical Machine Learning Project"
+output: html_document
+---
+
+# Summary
+
+In this project we will create a model for predicting the manner in which subjects in a study performed weight lifting (curling) exercises while wearing various motion sensors.  Some of the exercises were performed with correct form, others were intentionally performed with common but incorrect forms. The data set contains a "classe" field which is set to "A" if exercise was perfomed correctly and to "B", "C", "D", or "E" for the incorrect forms.  The accuracy of the prediction model will be determined by how well it predicts the "classe" value based on the sensor data.
+
+First we will load the the caret and randomForest libraries which will be used to build the predictive model, and set the random seed so the analysis is reproducible.  Then we will load the data from the training data file for the project and clean it up for analysis.  The data contain the strings "NA" and "#DIV/0!" which will be converted to NA values.
+
+```{r, message=FALSE}
+library(caret); library(randomForest)
+set.seed(5555)
+rawData <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!"))
+```
+
+Many of the columns contain only "NA" values and we should remove these since they won't provide any predictive information for the model.  Also, many of the columns only contain data when the "new_window" column value is "yes".  These are apparently computed statistical values based on the sensor data for 0.5 - 2.5 second windows as described in the paper provided with the data.  Since a large percentage of these rows are NA, and the pml-testing.csv dataset only contain rows with "new_window" set to "no" and all NA values for these columns, they are likely not helpful for building the model either and will be removed.  By keeping only the columns with a ratio of NA's to total rows of less than 0.1, we'll eliminate both sets of columns that are completely or mostly NA values.  Last, we'll remove the first 7 columns since those are metadata about the measurement and won't be used for prediction.
+
+```{r}
+tmpData <- data.frame(rawData[,colMeans(is.na(rawData)) < 0.1], row.names=NULL)
+cleanData <- data.frame(tmpData[,-c(1:7)], row.names=NULL)
+```
+
+Next we'll divide the cleaned data into a training and test set in a 60/40 ratio using random sub-sampling so that we can do cross validation of the model(s).
+
+```{r}
+inTrain <- createDataPartition(y=cleanData$classe, p=0.6, list=FALSE)
+trainset <- cleanData[inTrain,]
+testset <- cleanData[-inTrain,]
+```
+
+Next we'll use the randomForest() function to create a prediction model from the training set.  Then we'll use the predict function to run the model against the testing set and use the confusionMatrix function to check the accuracy of the model.
+
+```{r}
+modFit <- randomForest(classe ~ .,data=trainset)
+predictions <- predict(modFit, newdata=testset)
+confusionMatrix(predictions, testset$classe)
+```
+
+The model achieved 99.27% accuracy in predicting the "classe" values from the testing set, and the expected out-of-sample error rate is 0.73% (calculated as 100% minus the accuracy).
